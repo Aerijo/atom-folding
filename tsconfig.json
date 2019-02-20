@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "declaration": true,
+    "declarationDir": "./types",
+    "forceConsistentCasingInFileNames": true,
+    "importHelpers": true,
+    "lib": ["es2017", "dom"],
+    "module": "commonjs",
+    "noErrorTruncation": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./dist",
+    "sourceMap": true,
+    "target": "es2017"
+  },
+  "compileOnSave": true
+}

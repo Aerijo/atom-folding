@@ -1,0 +1,41 @@
+{
+  "name": "atom-folding",
+  "main": "./dist/main",
+  "version": "0.0.0",
+  "description": "Custom code folding support for Atom",
+  "keywords": [
+    "folding"
+  ],
+  "bugs": {
+    "url": "https://github.com/Aerijo/atom-folding/issues"
+  },
+  "author": "Benjamin Gray",
+  "repository": "https://github.com/Aerijo/atom-folding",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.34.0 <2.0.0"
+  },
+  "devDependencies": {
+    "@types/atom": "latest",
+    "atom-languageclient": "^0.9.9",
+    "tslint": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "configSchema": {
+    "foldTrailingWhitespace": {
+      "description": "Global config to exclude trailing whitespace from the folding range",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "consumedServices": {
+    "folding.provider": {
+      "versions": {
+        "0.0.0": "consumeFoldProvider"
+      }
+    }
+  }
+}
