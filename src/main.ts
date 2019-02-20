@@ -74,8 +74,6 @@ class EditorData {
   applyCustomFoldsProvider (provider: FoldProvider) {
     if (!this.usingCustomFolds) this.updateOriginalFoldMethods();
 
-    console.log("applying custom folds");
-
     const languageMode = (this.editor as any).languageMode;
     languageMode.isFoldableAtRow = (row: number) => provider.isFoldableAtRow({row, editor: this.editor});
     languageMode.getFoldableRangeContainingPoint = (point: Point, tabLength: number) => provider.getFoldableRangeContainingPoint({point, tabLength, editor: this.editor});
@@ -114,7 +112,6 @@ class FoldConsumer {
           const scopeName = grammar.scopeName;
           const provider = this.providers.get(scopeName);
           if (provider === undefined) {
-            console.log("updating folds");
             editorData.updateOriginalFoldMethods();
             return;
           }
@@ -137,7 +134,6 @@ class FoldConsumer {
       return data;
     }
 
-    console.log("making new editor data");
     const editorData = new EditorData(editor);
     this.observedEditors.set(editor, editorData);
     return editorData;
@@ -153,14 +149,12 @@ class FoldConsumer {
   }
 
   consumeFoldProvider (payload: any) {
-    console.log("consuming provider", payload);
     if (
       typeof payload.isFoldableAtRow !== "function" ||
       typeof payload.getFoldableRangeContainingPoint !== "function" ||
       typeof payload.getFoldableRangesAtIndentLevel !== "function" ||
       !payload.scope
     ) {
-      console.log("failed to meet expectations");
       return;
     }
 
