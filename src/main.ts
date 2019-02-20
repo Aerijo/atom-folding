@@ -21,6 +21,7 @@ interface FoldProvider {
   isFoldableAtRow (params: IsFoldableParams): boolean;
   getFoldableRangeContainingPoint (params: GetPointFoldableParams): Range[];
   getFoldableRangesAtIndentLevel (params: GetIndentFoldableParams): Range[];
+  destroy? (): void;
 }
 
 interface LanguageModeFoldMethods {
@@ -45,7 +46,7 @@ class EditorData {
   updateOriginalFoldMethods () {
     const languageMode = (this.editor as any).languageMode;
 
-    if (this.originalFoldMethods !== undefined && this.usingCustomFolds && languageMode.isFoldableAtRow === this.originalFoldMethods.isFoldableAtRow) {
+    if (this.originalFoldMethods !== undefined && this.usingCustomFolds) {
       console.error("[atom-folding] Unexpected: Custom rules should not be in place; aborting");
       return;
     }
@@ -73,10 +74,12 @@ class EditorData {
   applyCustomFoldsProvider (provider: FoldProvider) {
     if (!this.usingCustomFolds) this.updateOriginalFoldMethods();
 
+    console.log("applying custom folds");
+
     const languageMode = (this.editor as any).languageMode;
-    languageMode.isFoldableAtRow = provider.isFoldableAtRow;
-    languageMode.getFoldableRangeContainingPoint = provider.getFoldableRangeContainingPoint;
-    languageMode.getFoldableRangesAtIndentLevel = provider.getFoldableRangesAtIndentLevel;
+    languageMode.isFoldableAtRow = (row: number) => provider.isFoldableAtRow({row, editor: this.editor});
+    languageMode.getFoldableRangeContainingPoint = (point: Point, tabLength: number) => provider.getFoldableRangeContainingPoint({point, tabLength, editor: this.editor});
+    languageMode.getFoldableRangesAtIndentLevel = (level: number, tabLength: number) => provider.getFoldableRangesAtIndentLevel({level, tabLength, editor: this.editor});
 
     this.usingCustomFolds = true;
   }
@@ -144,32 +147,45 @@ class FoldConsumer {
     this.subscriptions.dispose();
     this.observedEditors.forEach(data => { data.deactivate(); });
     this.observedEditors.clear();
+    this.providers.forEach(provider => {
+      if (provider.destroy !== undefined) provider.destroy(); // TODO: Prevent duplicate calls
+    });
   }
 
   consumeFoldProvider (payload: any) {
+    console.log("consuming provider", payload);
     if (
       typeof payload.isFoldableAtRow !== "function" ||
       typeof payload.getFoldableRangeContainingPoint !== "function" ||
       typeof payload.getFoldableRangesAtIndentLevel !== "function" ||
       !payload.scope
     ) {
+      console.log("failed to meet expectations");
       return;
     }
 
-    const foldProvider: FoldProvider = {
-      isFoldableAtRow: payload.isFoldableAtRow,
-      getFoldableRangeContainingPoint: payload.getFoldableRangeContainingPoint,
-      getFoldableRangesAtIndentLevel: payload.getFoldableRangesAtIndentLevel
-    };
+    const foldProvider: FoldProvider = payload;
 
-    const scope = payload.scope;
-    if (scope instanceof Array) {
-      scope.forEach(s => {
-        if (typeof s === "string") this.providers.set(s, foldProvider);
-      });
-    } else if (typeof scope === "string") {
-      this.providers.set(scope, foldProvider);
+    let scopes = payload.scope;
+    if (typeof scopes === "string") {
+      scopes = [scopes];
     }
+    if (!(scopes instanceof Array)) return;
+
+    const openEditors = atom.workspace.getTextEditors();
+
+    scopes.forEach(scope => {
+      if (typeof scope !== "string") return;
+      if (this.providers.get(scope) !== undefined) return;
+      this.providers.set(scope, foldProvider);
+
+      openEditors.forEach(editor => {
+        if (editor.getGrammar().scopeName === scope) {
+          const data = this.observedEditors.get(editor);
+          if (data !== undefined) data.applyCustomFoldsProvider(foldProvider);
+        }
+      });
+    });
   }
 }
 
