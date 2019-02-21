@@ -17,7 +17,6 @@
   },
   "devDependencies": {
     "@types/atom": "latest",
-    "atom-languageclient": "^0.9.9",
     "tslint": "latest",
     "typescript": "latest"
   },

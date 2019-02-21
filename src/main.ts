@@ -18,15 +18,16 @@ interface GetIndentFoldableParams {
 }
 
 interface FoldProvider {
+  allowDefaultFolds?: boolean;
   isFoldableAtRow (params: IsFoldableParams): boolean;
-  getFoldableRangeContainingPoint (params: GetPointFoldableParams): Range[];
-  getFoldableRangesAtIndentLevel (params: GetIndentFoldableParams): Range[];
+  getFoldableRangeContainingPoint (params: GetPointFoldableParams): Range | undefined;
+  getFoldableRangesAtIndentLevel (params: GetIndentFoldableParams): Range[] | undefined;
   destroy? (): void;
 }
 
 interface LanguageModeFoldMethods {
   isFoldableAtRow (row: number): boolean;
-  getFoldableRangeContainingPoint (point: Point, tabLength: number): Range[];
+  getFoldableRangeContainingPoint (point: Point, tabLength: number): Range;
   getFoldableRangesAtIndentLevel (level: number, tabLength: number): Range[];
 }
 
@@ -73,11 +74,33 @@ class EditorData {
 
   applyCustomFoldsProvider (provider: FoldProvider) {
     if (!this.usingCustomFolds) this.updateOriginalFoldMethods();
-
     const languageMode = (this.editor as any).languageMode;
-    languageMode.isFoldableAtRow = (row: number) => provider.isFoldableAtRow({row, editor: this.editor});
-    languageMode.getFoldableRangeContainingPoint = (point: Point, tabLength: number) => provider.getFoldableRangeContainingPoint({point, tabLength, editor: this.editor});
-    languageMode.getFoldableRangesAtIndentLevel = (level: number, tabLength: number) => provider.getFoldableRangesAtIndentLevel({level, tabLength, editor: this.editor});
+
+    if (provider.allowDefaultFolds) {
+      const isFoldableAtRowOrig = languageMode.isFoldableAtRow;
+      const getFoldableRangeContainingPointOrig = languageMode.getFoldableRangeContainingPoint;
+      const getFoldableRangesAtIndentLevelOrig = languageMode.getFoldableRangesAtIndentLevel;
+
+      languageMode.isFoldableAtRow = (row: number) => {
+        return provider.isFoldableAtRow({row, editor: this.editor}) || isFoldableAtRowOrig.apply(languageMode, [row]);
+      };
+
+      languageMode.getFoldableRangeContainingPoint = (point: Point, tabLength: number) => {
+        const providerFold = provider.getFoldableRangeContainingPoint({point, tabLength, editor: this.editor});
+        if (providerFold !== undefined) return providerFold;
+        return getFoldableRangeContainingPointOrig.apply(languageMode, [point, tabLength]);
+      };
+
+      languageMode.getFoldableRangesAtIndentLevel = (level: number, tabLength: number) => {
+        const providerFolds = provider.getFoldableRangesAtIndentLevel({level, tabLength, editor: this.editor});
+        if (providerFolds !== undefined) return providerFolds;
+        return getFoldableRangesAtIndentLevelOrig.apply(languageMode, [level, tabLength]);
+      };
+    } else {
+      languageMode.isFoldableAtRow = (row: number) => provider.isFoldableAtRow({row, editor: this.editor});
+      languageMode.getFoldableRangeContainingPoint = (point: Point, tabLength: number) => provider.getFoldableRangeContainingPoint({point, tabLength, editor: this.editor});
+      languageMode.getFoldableRangesAtIndentLevel = (level: number, tabLength: number) => provider.getFoldableRangesAtIndentLevel({level, tabLength, editor: this.editor});
+    }
 
     this.usingCustomFolds = true;
   }
