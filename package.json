@@ -21,7 +21,8 @@
     "typescript": "latest"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "install": "tsc"
   },
   "configSchema": {
     "foldTrailingWhitespace": {
