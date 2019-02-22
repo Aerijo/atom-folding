@@ -1,7 +1,7 @@
 {
   "name": "atom-folding",
   "main": "./dist/main",
-  "version": "0.0.0",
+  "version": "0.0.4",
   "description": "Custom code folding support for Atom",
   "keywords": [
     "folding"
