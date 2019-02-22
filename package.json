@@ -22,7 +22,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "install": "tsc"
+    "prepublish": "tsc"
   },
   "configSchema": {
     "foldTrailingWhitespace": {
